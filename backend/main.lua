@@ -62,8 +62,9 @@ local function copy_webkit_files()
 end
 
 local function inject_webkit_files()
-    millennium.add_browser_css("webkit/steamdb-webkit.css")
-    millennium.add_browser_js("webkit/luatools.js")
+    local css_id = millennium.add_browser_css("webkit/steamdb-webkit.css")
+    local js_id = millennium.add_browser_js("webkit/luatools.js")
+    logger.log("inject_webkit_files: css_id=" .. tostring(css_id) .. " js_id=" .. tostring(js_id))
 end
 
 -- ── Lifecycle ────────────────────────────────────────────────────────────────
@@ -101,6 +102,9 @@ end
 local function on_frontend_loaded()
     logger.log("Frontend loaded")
     copy_webkit_files()
+    local css_id = millennium.add_browser_css("webkit/steamdb-webkit.css")
+    local js_id = millennium.add_browser_js("webkit/luatools.js")
+    logger.log("on_frontend_loaded inject: css_id=" .. tostring(css_id) .. " js_id=" .. tostring(js_id))
 end
 
 -- ── Logger (called as "Logger.log" from JS) ──────────────────────────────────
@@ -135,6 +139,15 @@ _G["Logger.error"] = Logger.error
 
 function GetPluginDir()
     return paths.get_plugin_dir() -- plain string, matches Python
+end
+
+function GetFrontendScript()
+    -- Serve public/luatools.js over IPC so the webkit module can bootstrap the UI.
+    local path = fs.join(paths.get_plugin_dir(), "public", "luatools.js")
+    if not fs.exists(path) then return json_err("luatools.js not found") end
+    local content = m_utils.read_file(path)
+    if not content then return json_err("failed to read luatools.js") end
+    return content
 end
 
 function InitApis()
